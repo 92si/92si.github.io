@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Document</title>
+    <style>
+        
+@import url('https://fonts.googleapis.com/css2?family=Hanuman:wght@100&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400..700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lexend+Exa:wght@100..900&display=swap');
+
+body {
+   font-family: "Hanuman", serif;
+   font-weight:bolder;
+   font-style: normal;
+   margin: 0%;
+   overflow-x: hidden;
+}
+.background {
+    width: 100vw;
+    height: 100vh;
+    object-fit: cover;
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    z-index: -1;
+ }
+
+ .clock {
+    color:white;
+    font-size: 68px;
+    mix-blend-mode:soft-light;
+    text-align: center;
+    font-family: "Lexend Exa", sans-serif;
+    font-weight: 500;
+    
+ }
+
+ .date {
+    color:white;
+    font-size: 18px;
+    mix-blend-mode: soft-light;
+    text-align: center;
+    margin-top: -10px;
+ }
+ .gregorian {
+   margin-top: -26px;
+ }
+ .times {
+    color:white;
+    font-size: 18px;  
+    opacity: 50%;
+    font-family: "Lexend Exa", sans-serif;
+ }
+
+ .salah-button {
+   color: transparent;
+   width: 30px;
+   height: 30px;
+   border-radius: 50%;
+   border: 0px;
+   opacity: 60%;
+ }
+ .salah-button:hover{
+   cursor: pointer;
+  border: 4px rgb(167, 167, 167) solid; 
+ }
+ .salah-button:active{
+   opacity: 100%;
+ }
+ .month {
+   font-family: "Dancing Script", cursive;
+   font-size: 22px;
+ }
+ .day {
+   text-align: center;
+   font-family: "Dancing Script", cursive;
+   color:white;
+   margin-top: -50px;
+   font-size: 75px;
+   mix-blend-mode: soft-light;
+   z-index: 3;
+   transform: rotate(-3deg);
+   opacity: 80%;
+ }
+ .day2 {
+   text-align: center;
+   font-family: "Dancing Script", cursive;
+   color:transparent;
+   margin-top: -90px;
+   -webkit-text-stroke-width: 0.5px;
+   -webkit-text-stroke-color: white;
+   font-size: 75px;
+   opacity: 40%;
+   transform: rotate(-3deg);
+   z-index: 4;
+ }
+    </style>
+</head>
+<body>
+    <video autoplay muted loop class="background">
+        <source src="https://i.imgur.com/1sOaASR.mp4" type="video/mp4">
+      </video>
+
+      <div id="clock" class="clock"></div>
+      <div id="day" class="day"> </div>
+      <div id="day2" class="day2"> </div>
+      <p class="hijri date" id="hijri-date-display"></p>
+       <p class="gregorian date" id="gregorian-date-display"></p>
+        
+        <button onclick="fetchSalahTimes()" class="salah-button" >0</button>
+        <div id="salah-times" class = 'times'></div>
+    <script>
+        function showTime() {
+    let date = new Date();
+    let hours = date.getHours();
+    let minutes = date.getMinutes();
+    let seconds = date.getSeconds();
+    let day = date.getDay()
+    const weekday = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"]
+
+    hours = addZero(hours);
+    minutes = addZero(minutes);
+    seconds = addZero(seconds);
+    
+    document.getElementById('day').innerHTML = weekday[day];
+    document.getElementById('day2').innerHTML = weekday[day];  
+    document.getElementById('clock').innerHTML = `-${hours}:${minutes}-`;
+}
+
+function addZero(time) {
+    if (time < 10) {
+        time = "0" + time;
+    }
+    return time;
+}
+
+showTime();
+setInterval(showTime, 4000);
+
+async function fetchHijriDate() {
+    const currentDate = new Date();
+    const day = String(currentDate.getDate()).padStart(2, '0');
+    const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+    const year = currentDate.getFullYear();
+
+    const gregorianDate = `${day}-${month}-${year}`;
+
+    const apiUrl = `http://api.aladhan.com/v1/gToH/${gregorianDate}`;
+
+    const response = await fetch(apiUrl);
+    const data = await response.json();
+
+    if (data.code === 200) {
+        document.getElementById("gregorian-date-display").innerText = data.data.gregorian.date;
+        const hijriMonth = `<span class='month'>${data.data.hijri.month.en}</span>`;
+            const hijriDate = `${data.data.hijri.day} ${hijriMonth} ${data.data.hijri.year}`;
+            document.getElementById("hijri-date-display").innerHTML = hijriDate;
+    }
+}
+
+fetchHijriDate();
+
+async function fetchSalahTimes() {
+    
+    const lat = 26.0667; 
+    const lng = 50.5577; 
+    const tzname = "Asia/Bahrain"; 
+
+    const url = `https://salat.habibur.com/api/?lat=${lat}&lng=${lng}&tzname=${tzname}`;
+
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error("Failed to fetch Salah times");
+
+        const data = await response.json();
+        const times = data.data;
+
+        document.getElementById('salah-times').innerHTML = `
+            <p>Fajr: ${times.fajar18.short}</p>
+            <p>Sunrise-${times.rise.short}</p>
+            <p>Dhuhr-${times.noon.short}</p>
+            <p>Asr: ${times.asar1.short}</p>
+            <p>Maghrib: ${times.magrib12.short}</p>
+            <p>Isha: ${times.esha.short}</p>
+        `;
+    } catch (error) {
+        document.getElementById('salah-times').innerHTML = `<p>Error: ${error.message}</p>`;
+    }
+}
+
+    </script>
+</body>
+</html>
